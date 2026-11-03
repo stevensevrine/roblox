@@ -17,6 +17,7 @@ Script buat game **SCHOOL WAR [V2] Crows Zero**.
 
 - `SchoolWar.lua` — hub menu utama (Player, Combat, Visual, Farm, Teleport, Recon, Misc)
 - `recon.lua` — perekam remote untuk tuning
+- `diagnose.lua` — cek pemicu kick 267 (service/GUI/metatable)
 - `README.md` — dokumen ini
 
 ## Fitur
@@ -103,6 +104,36 @@ Override juga bisa diisi langsung dari tab **Recon**.
 `tool`, `char`, `root`, `target`, `targetchar`, `pos`, `name`, `true`, `false`, `nil`, angka.
 
 Contoh: `"targetchar,char,pos"` akan mengirim `target.Character, player.Character, root.Position`.
+
+## Kalau kena kick 267 (Disallowed Services Detected)
+
+Ini **kick dari anti-cheat game**, bukan ban. Rejoin biasanya bisa. Penyebab umum:
+GUI executor/hub berada di `CoreGui`, nama GUI cocok dengan daftar cheat, service
+tambahan dari executor, atau script ke-load saat anti-cheat masih scan di awal join.
+
+Urutan penanganan:
+
+1. Jalankan `diagnose.lua`, lihat baris bertanda `[!]` dan `[?]`. Kalau ada GUI executor
+   (`Delta`, `Arceus`, `Codex`, dll.) di `CoreGui`, itu tersangka utama.
+2. Sembunyikan UI bawaan executor (tutup floating icon / pilih mode stealth di executor).
+3. Pakai executor lain sebagai pembanding. Kalau kick hanya terjadi di satu executor,
+   masalahnya bukan di script.
+4. Load hub dengan stealth + delay:
+
+```lua
+getgenv().SCHOOLWAR_CONFIG = { Stealth = true, LoadDelay = 20 }
+loadstring(game:HttpGet("https://raw.githubusercontent.com/stevensevrine/roblox/main/SchoolWar.lua"))()
+```
+
+`Stealth` memindahkan GUI ke `gethui()` dan memanggil `protect_gui`/`syn.protect_gui`
+bila tersedia. `LoadDelay` menunda load sampai scan awal server selesai.
+5. Kalau masih kick saat idle, matikan fitur yang mengubah objek terus-menerus:
+   ESP, Fly, Noclip. Auto attack/capture yang terlalu cepat bisa memicu validasi server.
+6. Jangan jalankan `recon.lua` bersamaan dengan hub. Recon memasang hook `__namecall`;
+   restart client dulu kalau sudah pernah dipakai.
+
+Catatan: `Stealth` tidak menjamin 100%. Anti-cheat bisa juga memeriksa child `PlayerGui`
+atau fingerprint executor. Hasil `diagnose.lua` yang menentukan langkah berikutnya.
 
 ## Batasan
 

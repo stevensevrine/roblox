@@ -16,4 +16,8 @@ getgenv().SCHOOLWAR_CONFIG = {
     AttackArgs  = "tool,pos",
     AuraArgs    = "targetchar,char,pos",
     CaptureArgs = "pos,targetchar",
+
+    -- Anti-deteksi
+    Stealth   = true,  -- pakai gethui + protect_gui, jangan taruh GUI di CoreGui
+    LoadDelay = 15,    -- detik; tunggu anti-cheat selesai scan saat join (0 = langsung)
 }

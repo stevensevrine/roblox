@@ -69,6 +69,47 @@ local conns = {}
 local esp = {}
 local tracers = {}
 local running = true
+local gui
+local espFolder
+
+local function stealthEnabled()
+    return OVERRIDE.Stealth ~= false
+end
+
+local function uiParent()
+    if stealthEnabled() then
+        local ok, hidden = pcall(function()
+            return gethui and gethui()
+        end)
+        if ok and hidden then
+            return hidden
+        end
+    end
+    return LP:FindFirstChild("PlayerGui") or game:GetService("CoreGui")
+end
+
+local function protectGui(target)
+    pcall(function()
+        if syn and syn.protect_gui then
+            syn.protect_gui(target)
+        end
+    end)
+    pcall(function()
+        if protect_gui then
+            protect_gui(target)
+        end
+    end)
+    pcall(function()
+        if protectgui then
+            protectgui(target)
+        end
+    end)
+end
+
+local loadDelay = tonumber(OVERRIDE.LoadDelay) or 0
+if loadDelay > 0 then
+    task.wait(loadDelay)
+end
 
 local function notify(title, text)
     pcall(function()
@@ -630,20 +671,14 @@ end)
 --  Visual
 -- ============================================================
 
-local espFolder
-do
-    local ok, folder = pcall(function()
-        local f = Instance.new("Folder")
-        f.Name = "SW_ESP"
-        f.Parent = game:GetService("CoreGui")
-        return f
-    end)
-    espFolder = ok and folder or nil
-    if not espFolder then
-        espFolder = Instance.new("Folder")
-        espFolder.Name = "SW_ESP"
-        espFolder.Parent = LP:FindFirstChild("PlayerGui")
+local function ensureEspFolder()
+    if espFolder and espFolder.Parent then
+        return espFolder
     end
+    espFolder = Instance.new("Folder")
+    espFolder.Name = "HUD"
+    espFolder.Parent = gui or LP:FindFirstChild("PlayerGui")
+    return espFolder
 end
 
 local function removeESP(plr)
@@ -711,8 +746,8 @@ local function applyESP(plr)
     label.Text = plr.Name
     label.Parent = billboard
 
-    highlight.Parent = espFolder
-    billboard.Parent = espFolder
+    highlight.Parent = ensureEspFolder()
+    billboard.Parent = ensureEspFolder()
 
     local data = { highlight, billboard, label, billboard, hum }
     esp[plr] = data
@@ -882,13 +917,14 @@ local function stroke(parent, color, thickness)
     return s
 end
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "SchoolWarHub"
+gui = Instance.new("ScreenGui")
+gui.Name = "RobloxHud"
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.DisplayOrder = 999
 gui.IgnoreGuiInset = true
-gui.Parent = game:GetService("CoreGui")
+gui.Parent = uiParent()
+protectGui(gui)
 
 local uiScale = Instance.new("UIScale")
 uiScale.Parent = gui
@@ -1571,6 +1607,18 @@ do
     section(page, "Hub")
     toggle(page, "Tampilkan UI", CFG.ShowUI, function(on)
         main.Visible = on
+    end)
+    toggle(page, "Stealth (gethui + protect)", stealthEnabled(), function(on)
+        OVERRIDE.Stealth = on
+        local parent = on and uiParent() or game:GetService("CoreGui")
+        gui.Parent = parent or game:GetService("CoreGui")
+        if espFolder then
+            espFolder.Parent = gui
+        end
+        if on then
+            protectGui(gui)
+        end
+        notify("Stealth", on and "UI dipindah ke container tersembunyi." or "UI kembali ke CoreGui.")
     end)
     button(page, "PANIC: matikan semua fitur", function()
         for _, api in pairs(toggleRefs) do
