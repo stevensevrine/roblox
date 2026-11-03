@@ -18,6 +18,9 @@ Script buat game **SCHOOL WAR [V2] Crows Zero**.
 - `SchoolWar.lua` — hub menu utama (Player, Combat, Visual, Farm, Teleport, Recon, Misc)
 - `recon.lua` — perekam remote untuk tuning
 - `diagnose.lua` — cek pemicu kick 267 (service/GUI/metatable)
+- `dump_map.lua` — ekstrak geometri map + asset ID dari client
+- `render_map.py` — ubah hasil dump jadi denah SVG
+- `assets/` — icon & gambar media game (hasil ambil lewat API publik)
 - `README.md` — dokumen ini
 
 ## Fitur
@@ -134,6 +137,44 @@ bila tersedia. `LoadDelay` menunda load sampai scan awal server selesai.
 
 Catatan: `Stealth` tidak menjamin 100%. Anti-cheat bisa juga memeriksa child `PlayerGui`
 atau fingerprint executor. Hasil `diagnose.lua` yang menentukan langkah berikutnya.
+
+## Mengambil aset / map lewat link
+
+Place ini **copy-protected** (`copyingAllowed = false`). Hasil uji langsung:
+
+| Sumber | Hasil |
+| --- | --- |
+| `assetdelivery` place file | `409 User is not authorized to access Asset` |
+| Icon game | bisa (`thumbnails/v1/games/icons`) |
+| Gambar media/thumbnail | bisa (`games/v2/{universeId}/media` + `thumbnails/v1/assets`) |
+| Metadata, votes, server list | bisa |
+| Geometri map / `.rbxl` | tidak lewat link, harus dump dari client |
+
+Gambar yang sudah berhasil diambil ada di `assets/` (`icon-512.png`, `media-1.png`).
+
+### Dump layout map
+
+Jalankan secepatnya setelah spawn, sebelum anti-cheat kick:
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/stevensevrine/roblox/main/dump_map.lua"))()
+```
+
+Hasil di folder workspace executor: `SchoolWar_map.csv` dan `SchoolWar_assets.csv`.
+Render jadi denah:
+
+```
+python render_map.py SchoolWar_map.csv map.svg
+```
+
+Kalau executor punya `saveinstance()` (Delta/Codex dll.), itu lebih lengkap:
+
+```lua
+saveinstance({ FileName = "SchoolWar.rbxl" })
+```
+
+Batasan: dengan `StreamingEnabled`, hanya area yang sudah ter-load yang tercatat.
+Jalan keliling map dulu lalu dump ulang. Dump juga tidak menyertakan script server.
 
 ## Batasan
 
